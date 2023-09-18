@@ -5,9 +5,9 @@
 #include <stdio.h>
 #include <vector>
 
-#define STEP 0.1
-#define SENSITIVITY 0.01
-#define SCALE 50
+#define STEP 0.05
+#define SENSITIVITY 0.05
+#define SCALE 70
 #define WIDTH 450
 
 static void UpdateDrawFrame(void);

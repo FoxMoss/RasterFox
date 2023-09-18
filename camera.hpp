@@ -20,7 +20,7 @@ public:
     p2 = cP2;
     p3 = cP3;
   }
-  std::optional<Vector3> GetPointWeights(Vector2 point);
+  std::optional<Vector3> GetPointWeights(Vector2 point, bool quickExit);
   bool PointIn(Vector2 point);
   Vector3 InterpolatePoint(Vector2 point, Vector3 weights);
 };

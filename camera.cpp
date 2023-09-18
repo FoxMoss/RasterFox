@@ -71,18 +71,36 @@ void FoxCamera::DrawTri(Tri tri) {
   //  lastPoint.y);
 
   Tri computedTri(p1, p2, p3);
+  auto weights = computedTri.GetPointWeights(firstPoint, false);
+  auto weightsDown =
+      computedTri.GetPointWeights({firstPoint.x, firstPoint.y + 1}, false);
+  auto weightsLeft =
+      computedTri.GetPointWeights({firstPoint.x + 1, firstPoint.y}, false);
+
+  Vector3 deltaDown = Vector3Subtract(weightsDown.value(), weights.value());
+  Vector3 deltaLeft = Vector3Subtract(weightsLeft.value(), weights.value());
   for (int x = firstPoint.x; x < lastPoint.x; x++) {
     for (int y = firstPoint.y; y < lastPoint.y; y++) {
+      // ImageDrawRectangleRec(&copyImage,
+      //  {firstPoint.x, firstPoint.y,
+      //  lastPoint.x - firstPoint.x,
+      //  lastPoint.y - firstPoint.y},
+      // RED);
 
-      auto values = computedTri.GetPointWeights(Vector2{(float)x, (float)y});
-      if (!values.has_value() ||
-          (values->x < 0 || values->y < 0 || values->z < 0)) {
+      // auto values =
+      // computedTri.GetPointWeights(Vector2{(float)x, (float)y}, true);
+      Vector3 value = Vector3Zero();
+      value.x = weights->x + (deltaDown.x * (y - firstPoint.y) +
+                              (deltaLeft.x * (x - firstPoint.x)));
+      value.y = weights->y + (deltaDown.y * (y - firstPoint.y) +
+                              (deltaLeft.y * (x - firstPoint.x)));
+      value.z = weights->z + (deltaDown.z * (y - firstPoint.y) +
+                              (deltaLeft.z * (x - firstPoint.x)));
+      if (value.x < 0 || value.y < 0 || value.z < 0) {
         continue;
       }
       float depth =
-          computedTri
-              .InterpolatePoint(Vector2{(float)x, (float)y}, values.value())
-              .z;
+          computedTri.InterpolatePoint(Vector2{(float)x, (float)y}, value).z;
       if (depthBuffer[x + y * width] < depth) {
         depthBuffer[x + y * width] = depth;
       }
@@ -99,15 +117,24 @@ Vector3 Tri::InterpolatePoint(Vector2 point, Vector3 weights) {
   return ret;
 }
 
-std::optional<Vector3> Tri::GetPointWeights(Vector2 point) {
+std::optional<Vector3> Tri::GetPointWeights(Vector2 point, bool quickExit) {
   float w1 =
       ((p2.y - p3.y) * (point.x - p3.x) + (p3.x - p2.x) * (point.y - p3.y)) /
       ((p2.y - p3.y) * (p1.x - p3.x) + (p3.x - p2.x) * (p1.y - p3.y));
+  if (quickExit && w1 < 0) {
+    return {};
+  }
 
   float w2 =
       ((p3.y - p1.y) * (point.x - p3.x) + (p1.x - p3.x) * (point.y - p3.y)) /
       ((p2.y - p3.y) * (p1.x - p3.x) + (p3.x - p2.x) * (p1.y - p3.y));
+  if (quickExit && w2 < 0) {
+    return {};
+  }
   float w3 = 1 - w1 - w2;
+  if (quickExit && w3 < 0) {
+    return {};
+  }
 
   return Vector3{w1, w2, w3};
 }
